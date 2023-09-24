@@ -43,10 +43,31 @@ interface WeatherLookupCache {
       windspeed: number;
       winddirection: number;
       weathercode: number;
-      is_day: boolean;
+      is_day: number;
       time: string;
     };
     cacheExpireAt: Date;
+  };
+}
+
+interface ApiResponse {
+  success: boolean;
+  error?: string;
+  data?: {
+    country: string;
+    country_code: string;
+    region: string;
+    region_name: string;
+    city: string;
+    timezone: string;
+    current_weather: {
+      temperature: number;
+      wind_speed: number;
+      wind_direction: number;
+      weather_code: number;
+      is_day: boolean;
+      time: string;
+    };
   };
 }
 
@@ -95,6 +116,10 @@ const getWeather = async (lat: number, lon: number) => {
   return data;
 };
 
+const sendResponse = (res: any, data: ApiResponse) => {
+  res.json(data);
+};
+
 app.get("/", async (req, res) => {
   // Get the user's IP address
   let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -110,7 +135,6 @@ app.get("/", async (req, res) => {
   // Check if geo IP is cached
   let geoIp = geoIpLookupCache[ip];
   if (geoIp) {
-    console.log(`Cache is valid for: ${geoIp.cacheExpireAt}`);
     // Check if cached response is expired
     if (geoIp.cacheExpireAt < new Date()) {
       delete geoIpLookupCache[ip];
@@ -120,7 +144,9 @@ app.get("/", async (req, res) => {
     try {
       geoIp = await getGeoIp(ip);
     } catch (e) {
-      return res.status(500).send("Error fetching location data");
+      return res
+        .status(500)
+        .json({ success: false, error: "Error fetching location data" });
     }
   }
 
@@ -136,11 +162,31 @@ app.get("/", async (req, res) => {
     try {
       weather = await getWeather(geoIp.lat, geoIp.lon);
     } catch (e) {
-      return res.status(500).send("Error fetching location data");
+      return res
+        .status(500)
+        .json({ success: false, error: "Error fetching weather data" });
     }
   }
 
-  return res.json(weather);
+  return sendResponse(res, {
+    success: true,
+    data: {
+      country: geoIp.country,
+      country_code: geoIp.countryCode,
+      region: geoIp.region,
+      region_name: geoIp.regionName,
+      city: geoIp.city,
+      timezone: geoIp.timezone,
+      current_weather: {
+        temperature: weather.current_weather.temperature,
+        wind_speed: weather.current_weather.windspeed,
+        wind_direction: weather.current_weather.winddirection,
+        weather_code: weather.current_weather.weathercode,
+        is_day: weather.current_weather.is_day === 1 ? true : false,
+        time: weather.current_weather.time,
+      },
+    },
+  });
 });
 
 app.listen(port, () => {
