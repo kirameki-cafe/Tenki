@@ -1,19 +1,18 @@
-FROM node:18 AS build
-WORKDIR /home/node/app
+FROM oven/bun:1.2.15 AS build
+WORKDIR /app
 
-COPY . .
+COPY package.json bun.lock ./
+RUN bun install
 
-RUN yarn
-RUN yarn build
+COPY src ./src
+RUN bun build src/index.ts --outdir ./dist --target bun
 
-FROM node:17
-WORKDIR /home/node/app
+FROM oven/bun:1.2.15-slim
+WORKDIR /app
 
-COPY --from=build /home/node/app/package.json .
-COPY --from=build /home/node/app/yarn.lock .
+COPY --from=build /app/dist/index.js ./
+COPY --from=build /app/package.json ./
 
-RUN yarn
+EXPOSE 3000
 
-COPY --from=build /home/node/app/dist .
-
-CMD [ "node", "index.js"]
+CMD ["bun", "run", "index.js"]
