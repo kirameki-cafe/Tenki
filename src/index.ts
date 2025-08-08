@@ -178,8 +178,8 @@ app.get("/", async ({ server, request, set, headers }) => {
   };
 });
 
-app.listen(3000, () => {
-  console.log("🦊 Elysia is running at http://localhost:3000");
+app.listen(process.env.PORT ?? 3000, () => {
+  console.log(`🦊 Elysia is running at http://localhost:${process.env.PORT ?? 3000}`);
 });
 
-export default app;
+// export default app;
