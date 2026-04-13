@@ -15,7 +15,7 @@
     "build": "bun build src/index.ts --outdir ./dist --target bun"
   },
   "dependencies": {
-    "@elysiajs/cors": "^1.3.3",
+    "@elysiajs/cors": "^1.4.1",
     "elysia": "latest"
   }
 }
